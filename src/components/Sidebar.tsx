@@ -113,6 +113,9 @@ export function Sidebar({ filter, onFilterChange, counts, onAddRequest, theme, o
           <button type="button" className="pill !w-8 !px-0 shrink-0" aria-label="Cambiar tema" onClick={onToggleTheme}>
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>
+          <button type="button" className="pill !w-8 !px-0 shrink-0" aria-label="Modo sin conexión" onClick={onToggleOffline}>
+            {isOffline ? <WifiOff size={14} /> : <Wifi size={14} />}
+          </button>
         </div>
       </nav>
     </>
