@@ -1,0 +1,239 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Memoria Spot UI — glass layer (tokens + component classes).
+ *
+ * Extracted from the reference implementation (MemorIA Splat Viewer,
+ * src/index.css). Copy this file into a new project and import it after
+ * Tailwind's base layer (e.g. at the end of src/index.css). Components only
+ * compose these classes; every color and size lives in the tokens below.
+ *
+ * Requires: Tailwind with `darkMode: ["class"]` (v3) or
+ * `@custom-variant dark (&:where(.dark, .dark *));` (v4), and the `dark`
+ * class toggled on <html> (see theme-prepaint.html and use-theme.ts).
+ *
+ * Concentric radii: every nested surface uses
+ *   inner radius = outer radius − padding between them
+ * so curves stay parallel (28 → 16 → 8 in panels, 22 + 6 = 28 in docks).
+ */
+@layer base {
+  :root {
+    /* Geometry */
+    --ui-pad: 6px;                 /* dock / pill-group padding */
+    --ui-btn: 44px;                /* pill icon button (touch-friendly) */
+    --ui-dock-radius: calc(var(--ui-btn) / 2 + var(--ui-pad));              /* 28px */
+    --ui-panel-radius: 28px;
+    --ui-panel-pad: 12px;
+    --ui-inner-radius: calc(var(--ui-panel-radius) - var(--ui-panel-pad)); /* 16px */
+    --ui-chip-radius: calc(var(--ui-inner-radius) - 8px);                  /* 8px  */
+
+    /* Light = "pearl frost": pale-gray glass over a pearl field, dark ink.
+       50% glass: over the field ~#c7c7cc (neutral-900 10.6:1); over dark
+       content primary text still >= 4.6:1. Heavier blur keeps it calm. */
+    --glass-bg: rgba(198, 198, 204, 0.5);
+    --glass-bg-strong: rgba(198, 198, 204, 0.72);
+    --glass-border: rgba(0, 0, 0, 0.07);
+    --glass-highlight: rgba(255, 255, 255, 0.4);
+    --glass-depth: 0 10px 40px -12px rgba(0, 0, 0, 0.18);
+    --glass-blur: 40px;
+    --ui-field: #c8c8cd;
+    --ui-ink: #171717;               /* text primary (neutral-900) */
+    --ui-ink-2: #262626;             /* text secondary, idle icons (neutral-800) */
+    --ui-ink-3: #46464b;             /* text tertiary — the light text floor */
+    --ui-hover: rgba(0, 0, 0, 0.06);
+    --ui-pressed: rgba(0, 0, 0, 0.08);
+    --ui-divider: rgba(0, 0, 0, 0.08);
+    --ui-focus: #0369a1;             /* sky-700 */
+    --ui-danger-hover-bg: rgba(239, 68, 68, 0.1);
+    --ui-danger-hover-text: #7f1d1d; /* red-900 */
+  }
+
+  /* Dark = "smoke glass": translucent graphite, white ink. Hover darkens,
+     the pressed/selected state lightens (the one state that should pop). */
+  .dark {
+    --glass-bg: rgba(30, 30, 32, 0.66);
+    --glass-bg-strong: rgba(30, 30, 32, 0.78);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --glass-highlight: rgba(255, 255, 255, 0.18);
+    --glass-depth: 0 10px 40px -12px rgba(0, 0, 0, 0.35);
+    --glass-blur: 32px;
+    --ui-field: #0a0a0c;
+    --ui-ink: #ffffff;
+    --ui-ink-2: rgba(255, 255, 255, 0.85);
+    --ui-ink-3: rgba(255, 255, 255, 0.85); /* smoke has room for two text tiers only */
+    --ui-hover: rgba(0, 0, 0, 0.14);
+    --ui-pressed: rgba(255, 255, 255, 0.1);
+    --ui-divider: rgba(255, 255, 255, 0.14);
+    --ui-focus: #bae6fd;             /* sky-200 */
+    --ui-danger-hover-bg: rgba(239, 68, 68, 0.22);
+    --ui-danger-hover-text: #fee2e2; /* red-100 */
+  }
+}
+
+@layer components {
+  /* Frosted surface for every floating piece: panels, docks, bars, toasts. */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    color: var(--ui-ink);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      var(--glass-depth);
+  }
+  /* Modals, sheets, menus: must hide what is behind them. */
+  .glass-strong {
+    background: var(--glass-bg-strong);
+  }
+
+  /* Pill container for .pill-btn children: 6px pad + 22px button radius = 28px. */
+  .dock {
+    display: flex;
+    gap: 4px;
+    padding: var(--ui-pad);
+    border-radius: var(--ui-dock-radius);
+  }
+
+  /* 44px circular icon button (16px icon inside). */
+  .pill-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ui-btn);
+    height: var(--ui-btn);
+    border-radius: 9999px;
+    color: var(--ui-ink-2);
+    transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pill-btn:hover {
+    background: var(--ui-hover);
+    color: var(--ui-ink);
+  }
+  .pill-btn:active {
+    transform: scale(0.94);
+  }
+  .pill-btn:focus-visible,
+  .pill:focus-visible {
+    outline: 2px solid var(--ui-focus);
+    outline-offset: 2px;
+  }
+  .pill-btn[aria-pressed='true'] {
+    background: var(--ui-pressed);
+    color: var(--ui-ink);
+  }
+  /* Destructive: neutral at rest, red only as the user reaches for it. */
+  .pill-btn--danger:hover {
+    background: var(--ui-danger-hover-bg);
+    color: var(--ui-danger-hover-text);
+  }
+
+  /* 32px text pill: segmented options, toggles in option bars. */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ui-ink-2);
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  .pill:hover {
+    background: var(--ui-hover);
+    color: var(--ui-ink);
+  }
+  .pill[aria-pressed='true'] {
+    background: var(--ui-pressed);
+    color: var(--ui-ink);
+  }
+
+  /* Panel 28/12 → inset group 16 → chip 8. */
+  .panel {
+    border-radius: var(--ui-panel-radius);
+    padding: var(--ui-panel-pad);
+  }
+  .panel-inner {
+    border-radius: var(--ui-inner-radius);
+  }
+  .panel-chip {
+    border-radius: var(--ui-chip-radius);
+  }
+
+  .dock-divider {
+    align-self: center;
+    width: 60%;
+    height: 1px;
+    background: var(--ui-divider);
+  }
+  .dock-divider--vertical {
+    width: 1px;
+    height: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill-btn,
+  .pill {
+    transition: none;
+  }
+  .pill-btn:active {
+    transform: none;
+  }
+}
+
+/* Click / tap feedback ring drawn over full-bleed content (map, canvas, video).
+   It contrasts with the content, not with the glass. */
+@layer components {
+  .nav-ripple {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border-radius: 9999px;
+    border: 2px solid rgba(23, 23, 23, 0.85);
+    box-shadow: 0 0 18px rgba(125, 211, 252, 0.55);
+    pointer-events: none;
+    animation: nav-ripple 650ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  }
+  .nav-ripple--map {
+    border-color: #0e7490; /* cyan-700: tool signal */
+  }
+  .dark .nav-ripple {
+    border-color: rgba(255, 255, 255, 0.9);
+  }
+  .dark .nav-ripple--map {
+    border-color: #67e8f9; /* cyan-300 */
+  }
+}
+
+@keyframes nav-ripple {
+  from {
+    transform: scale(0.25);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-ripple {
+    animation-duration: 1ms;
+  }
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    background: var(--ui-field);
+    color: var(--ui-ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
