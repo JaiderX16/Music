@@ -34,8 +34,8 @@ export function useAudioPlayer() {
   const [muted, setMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isOffline, setIsOffline] = useState(false);
-  const isOfflineRef = useRef(false);
+  const [isOffline, setIsOffline] = useState(true);
+  const isOfflineRef = useRef(true);
 
   const stateRef = useRef<PlayerState>({
     tracks: [],
