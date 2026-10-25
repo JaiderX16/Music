@@ -34,6 +34,8 @@ export function useAudioPlayer() {
   const [muted, setMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isOffline, setIsOffline] = useState(false);
+  const isOfflineRef = useRef(false);
 
   const stateRef = useRef<PlayerState>({
     tracks: [],
@@ -43,14 +45,40 @@ export function useAudioPlayer() {
     repeatMode: 0,
   });
   stateRef.current = { tracks, currentIndex, isPlaying, isShuffle, repeatMode };
+  isOfflineRef.current = isOffline;
 
-  const loadTrack = useCallback((index: number, autoplay: boolean, source: Track[] = stateRef.current.tracks) => {
+  const resolveOfflineSrc = useCallback(async (src: string): Promise<string> => {
+    const isRemote = src.startsWith('http://') || src.startsWith('https://');
+    if (!isOfflineRef.current || !isRemote) return src;
+    try {
+      const cache = await caches.open('music-offline-v1');
+      const url = new URL(src, window.location.href);
+      const cached = await cache.match(url);
+      const response = cached
+        ? cached
+        : await (async () => {
+            const res = await fetch(src);
+            const blob = await res.blob();
+            await cache.put(url, new Response(blob));
+            return new Response(blob);
+          })();
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      objectUrlsRef.current.add(objectUrl);
+      return objectUrl;
+    } catch {
+      return src;
+    }
+  }, []);
+
+  const loadTrack = useCallback(async (index: number, autoplay: boolean, source: Track[] = stateRef.current.tracks) => {
     if (source.length === 0) return;
     const track = source[index];
     if (!track) return;
     const audio = audioRef.current;
     setCurrentIndex(index);
-    audio.src = track.src;
+    const src = await resolveOfflineSrc(track.src);
+    audio.src = src;
     audio.load();
     setCurrentTime(0);
     if (autoplay) {
@@ -60,11 +88,11 @@ export function useAudioPlayer() {
     } else {
       setIsPlaying(false);
     }
-  }, []);
+  }, [resolveOfflineSrc]);
 
   const playTrack = useCallback(
     (index: number) => {
-      loadTrack(index, true);
+      void loadTrack(index, true);
     },
     [loadTrack],
   );
@@ -76,12 +104,22 @@ export function useAudioPlayer() {
     if (s.isPlaying) {
       audio.pause();
       setIsPlaying(false);
-    } else {
+      return;
+    }
+    const play = async () => {
+      let src = audio.src;
+      if (isOfflineRef.current) {
+        const track = s.tracks[s.currentIndex];
+        if (track) src = await resolveOfflineSrc(track.src);
+      }
+      audio.src = src;
+      audio.load();
       audio.play().then(() => {
         setIsPlaying(true);
       }).catch(() => {});
-    }
-  }, []);
+    };
+    void play();
+  }, [resolveOfflineSrc]);
 
   const next = useCallback(() => {
     const s = stateRef.current;
@@ -96,14 +134,14 @@ export function useAudioPlayer() {
     const nextIndex = s.isShuffle
       ? Math.floor(Math.random() * s.tracks.length)
       : (s.currentIndex + 1) % s.tracks.length;
-    loadTrack(nextIndex, true, s.tracks);
+    void loadTrack(nextIndex, true, s.tracks);
   }, [loadTrack]);
 
   const prev = useCallback(() => {
     const s = stateRef.current;
     if (s.tracks.length === 0) return;
     const index = s.currentIndex - 1 < 0 ? s.tracks.length - 1 : s.currentIndex - 1;
-    loadTrack(index, true, s.tracks);
+    void loadTrack(index, true);
   }, [loadTrack]);
 
   const seek = useCallback((percent: number) => {
@@ -193,17 +231,9 @@ export function useAudioPlayer() {
       }
       const nextIndex = Math.min(index, nextTracks.length - 1);
       setCurrentIndex(nextIndex);
-      const nextTrack = nextTracks[nextIndex];
-      audio.src = nextTrack.src;
-      audio.load();
-      setCurrentTime(0);
-      if (s.isPlaying) {
-        audio.play().then(() => {
-          setIsPlaying(true);
-        }).catch(() => {});
-      }
+      void loadTrack(nextIndex, s.isPlaying, nextTracks);
     },
-    [],
+    [loadTrack],
   );
 
   useEffect(() => {
@@ -234,7 +264,7 @@ export function useAudioPlayer() {
       const nextIndex = s.isShuffle
         ? Math.floor(Math.random() * s.tracks.length)
         : (s.currentIndex + 1) % s.tracks.length;
-      loadTrack(nextIndex, true, s.tracks);
+      void loadTrack(nextIndex, true, s.tracks);
     };
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
@@ -266,6 +296,10 @@ export function useAudioPlayer() {
     };
   }, []);
 
+  const toggleOffline = useCallback(() => {
+    setIsOffline((prev) => !prev);
+  }, []);
+
   return {
     tracks,
     currentIndex,
@@ -276,6 +310,7 @@ export function useAudioPlayer() {
     muted,
     currentTime,
     duration,
+    isOffline,
     addFiles,
     playTrack,
     togglePlay,
@@ -287,6 +322,7 @@ export function useAudioPlayer() {
     toggleShuffle,
     cycleRepeat,
     removeTrack,
+    toggleOffline,
     formatTime,
   };
 }

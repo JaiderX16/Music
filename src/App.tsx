@@ -21,6 +21,7 @@ export default function App() {
     muted,
     currentTime,
     duration,
+    isOffline,
     addFiles,
     playTrack,
     togglePlay,
@@ -32,6 +33,7 @@ export default function App() {
     toggleShuffle,
     cycleRepeat,
     removeTrack,
+    toggleOffline,
   } = useAudioPlayer();
 
   const [filter, setFilter] = useState<LibraryFilter>('songs');
@@ -98,6 +100,8 @@ export default function App() {
         onAddRequest={openFilePicker}
         theme={theme}
         onToggleTheme={toggleTheme}
+        isOffline={isOffline}
+        onToggleOffline={toggleOffline}
       />
 
       <main ref={pageRef} className="md:pl-[352px] pb-40">

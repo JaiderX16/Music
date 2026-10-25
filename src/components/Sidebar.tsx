@@ -1,4 +1,4 @@
-import { Disc3, ListMusic, Mic, Moon, Music, Plus, Sun } from 'lucide-react';
+import { Disc3, ListMusic, Mic, Moon, Music, Plus, Sun, Wifi, WifiOff } from 'lucide-react';
 import type { LibraryFilter } from '../types';
 
 const INSET = 'bg-black/[0.04] dark:bg-black/[0.20]';
@@ -22,9 +22,11 @@ interface SidebarProps {
   onAddRequest: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  isOffline: boolean;
+  onToggleOffline: () => void;
 }
 
-export function Sidebar({ filter, onFilterChange, counts, onAddRequest, theme, onToggleTheme }: SidebarProps) {
+export function Sidebar({ filter, onFilterChange, counts, onAddRequest, theme, onToggleTheme, isOffline, onToggleOffline }: SidebarProps) {
   const activeFilter = (key: LibraryFilter) => filter === key;
 
   const sidebarContent = (
@@ -37,6 +39,15 @@ export function Sidebar({ filter, onFilterChange, counts, onAddRequest, theme, o
           </button>
           <button type="button" className="pill-btn" aria-label="Cambiar tema" onClick={onToggleTheme}>
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            type="button"
+            className="pill-btn"
+            aria-label="Modo sin conexión"
+            aria-pressed={isOffline}
+            onClick={onToggleOffline}
+          >
+            {isOffline ? <WifiOff size={16} /> : <Wifi size={16} />}
           </button>
         </div>
       </div>
